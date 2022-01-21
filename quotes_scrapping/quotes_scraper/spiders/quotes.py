@@ -3,8 +3,9 @@ import scrapy
 # titulo = //h1/a/text()
 # citas = //span[@class="text" and @itemprop="text"]/text()
 # tags = //div[contains(@class,"tags-box")]//span[@class="tag-item"]/a/text()
-# //ul[@class="pager"]/li[@class="next"]/a/@href
-
+# links = //ul[@class="pager"]/li[@class="next"]/a/@href
+# author = response.xpath('//div[@class="quote"]/span[not(@class)]/small[@class="author" and @itemprop="author"]/text()').getall()
+# author = '//small[@class="author" and @itemprop="author"]/text()'
 class QuotesSpider(scrapy.Spider):
     name = 'quotes'
     start_urls = [
@@ -25,23 +26,26 @@ class QuotesSpider(scrapy.Spider):
 
         if kwargs:
             quotes = kwargs['quotes']
+            authors = kwargs['authors']
 
         quotes.extend(response.xpath('//span[@class="text" and @itemprop="text"]/text()').getall())
 
         next_page_button_link = response.xpath('//ul[@class="pager"]//li[@class="next"]/a/@href').get()
         
         if next_page_button_link:
-            yield response.follow(next_page_button_link, callback=self.parse_only_quotes, cb_kwargs={'quotes': quotes})
+            yield response.follow(next_page_button_link, callback=self.parse_only_quotes, cb_kwargs={'quotes':quotes,
+                                                                                                    'authors': authors })
         else:
             yield {
-                'quotes': quotes
+                'quotes': quotes,
+                'authors': authors
             }
 
     def parse(self, response):
         title = response.xpath('//h1/a/text()').get()
         quotes = response.xpath('//span[@class="text" and @itemprop="text"]/text()').getall()
         top_tags = response.xpath('//div[contains(@class, "tags-box")]//span[@class="tag-item"]/a/text()').getall()
-        author = response.xpath()
+        authors = response.xpath('//small[@class="author" and @itemprop="author"]/text()').getall()
 
         top = getattr(self, 'top', None)
         if top:
@@ -55,4 +59,6 @@ class QuotesSpider(scrapy.Spider):
 
         next_page_button_link = response.xpath('//ul[@class="pager"]//li[@class="next"]/a/@href').get()
         if next_page_button_link:
-            yield response.follow(next_page_button_link, callback=self.parse_only_quotes, cb_kwargs={'quotes': quotes})
+            yield response.follow(next_page_button_link, callback=self.parse_only_quotes, cb_kwargs={'quotes': quotes,
+                                                                                                    'authors': authors
+                                                                                                    })
